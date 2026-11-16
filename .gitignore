@@ -1,0 +1,7 @@
+.env
+data/
+*.parquet
+*.duckdb
+.venv/
+.pytest_cache/
+.ruff_cache/
