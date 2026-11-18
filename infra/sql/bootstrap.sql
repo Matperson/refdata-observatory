@@ -7,7 +7,7 @@ CREATE EXTENSION IF NOT EXISTS pg_trgm;
 CREATE EXTENSION IF NOT EXISTS fuzzystrmatch;
 CREATE EXTENSION IF NOT EXISTS unaccent;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
 
 -- 2. Rôles : création si absents, mot de passe toujours resynchronisé avec le .env
 SELECT format('CREATE ROLE refdata_app LOGIN PASSWORD %L', :'app_pw')
