@@ -1,4 +1,4 @@
-# ADR 0002 : PostgreSQL, extensions, rôles, schémas et amorçage
+# ADR 0001 : PostgreSQL, extensions, rôles, schémas et amorçage
 
 - **Statut** : accepté
 - **Date** : 2026-11-26
