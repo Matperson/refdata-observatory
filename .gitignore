@@ -5,3 +5,7 @@ data/
 .venv/
 .pytest_cache/
 .ruff_cache/
+
+# Python bytecode
+__pycache__/
+*.pyc
