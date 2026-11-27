@@ -11,6 +11,7 @@ Le dépôt est public et mené par une seule personne.
 Les contrôles actuels (hooks pre-commit, ruff, pyright strict, pytest, sqlfluff) ne tournent que sur ma machine.
 Rien ne garantit qu'ils passent ailleurs, ni qu'ils sont respectés avant une fusion.
 Les tests d'intégration exigent une base PostgreSQL avec pgvector et les trois rôles.
+La CI utilise la version de Python déclarée dans .python-version (3.14).
 
 ## Décisions
 

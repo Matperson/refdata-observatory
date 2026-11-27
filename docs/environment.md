@@ -12,7 +12,7 @@ Dernière mise à jour : 2026-11-18
 | Système | Fedora Linux 44 (KDE Plasma Desktop Edition) |
 | Conteneurs | Podman en mode rootless, sans démon |
 | Fournisseur Compose | podman-compose, appelé par `podman compose` |
-| Python | 3.13 (épinglé dans `.python-version`) |
+| Python | 3.14 (épinglé dans `.python-version`) |
 | Gestionnaire Python | uv (dépendances verrouillées dans `uv.lock`) |
 | Lanceur de tâches | just |
 
@@ -27,7 +27,7 @@ Dernière mise à jour : 2026-11-18
 | just | Commandes du projet | 1.59.0 | `sudo dnf install just` | `just --version` |
 | Client SSH | Accès à GitHub | fourni par le système | | `ssh -T git@github.com` |
 
-Python 3.13 est installé par uv selon `.python-version` : aucune installation système n'est nécessaire.
+Python 3.14 est installé par uv selon `.python-version` : aucune installation système n'est nécessaire.
 
 ### Outils de développement (installés par uv)
 
