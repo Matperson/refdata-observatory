@@ -197,6 +197,52 @@ pas un échec.
 2. Contrôler la structure sur la valeur normalisée et cumuler toutes les raisons d'échec structurelles : longueur, caractères autorisés, forme du préfixe.
 3. Évaluer la clé de contrôle seulement si aucune raison structurelle n'a été relevée, car elle n'a pas de sens sur une valeur mal formée.
 
+### Interface publique
+
+**Module** : `refdata.identifiers` (fichier `src/refdata/identifiers.py`).
+
+**Fonctions**
+
+| Nom | Entrée | Sortie | Rôle |
+|---|---|---|---|
+| `validate_isin` | une chaîne (`str`) | `IsinValidation` | validation détaillée : normalisation, structure, clé de contrôle |
+| `is_valid_isin` | une chaîne (`str`) | booléen | raccourci : vrai si et seulement si `validate_isin(...).valid` |
+
+**Type de résultat `IsinValidation`** (immuable)
+
+| Champ | Type | Contenu |
+|---|---|---|
+| `received` | `str` | valeur fournie, jamais modifiée |
+| `normalized` | `str` | valeur corrigée (majuscules, sans espaces ni caractères blancs) |
+| `failures` | ensemble figé de `IsinFailure` | raisons d'échec ; vide si la valeur est valide |
+| `warnings` | ensemble figé de `IsinWarning` | écarts de forme corrigés |
+| `valid` | booléen, propriété calculée | vrai si et seulement si `failures` est vide ; non stocké |
+
+**Énumération `IsinFailure`** (chaînes, valeurs stables)
+
+| Membre | Valeur |
+|---|---|
+| `WRONG_LENGTH` | `wrong_length` |
+| `FORBIDDEN_CHARACTERS` | `forbidden_characters` |
+| `INVALID_PREFIX_FORMAT` | `invalid_prefix_format` |
+| `INVALID_CHECK_DIGIT` | `invalid_check_digit` |
+
+**Énumération `IsinWarning`** (chaînes, valeurs stables)
+
+| Membre | Valeur |
+|---|---|
+| `CASE_CORRECTED` | `case_corrected` |
+| `WHITESPACE_REMOVED` | `whitespace_removed` |
+
+**Règles de contrat**
+
+- Aucune exception pour une valeur invalide : l'invalidité est une valeur retournée.
+- Fonctions pures : aucun effet de bord, aucun accès disque, réseau ou base.
+- Le paramètre est toujours une chaîne : une valeur manquante (`None`) se traite avant l'appel, à l'endroit où les données sont lues.
+- Les ensembles sont non ordonnés : les tests les comparent comme des ensembles.
+- Les membres des énumérations sont comparés dans les tests, pas leurs valeurs écrites en dur, sauf un test qui fige les valeurs.
+- Interface publique exportée explicitement (`__all__`) : `validate_isin`, `is_valid_isin`, `IsinValidation`, `IsinFailure`, `IsinWarning`.
+
 ### Cas de test
 
 | Cas | Entrée | Valide ? | Raisons d'échec | Avertissements | Valeur normalisée |
