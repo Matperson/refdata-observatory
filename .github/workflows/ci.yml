@@ -1,0 +1,74 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - name: Installer les dépendances (verrou respecté)
+        run: uv sync --locked
+      - name: Hooks pre-commit (ruff, gitleaks, yaml, toml, fichiers)
+        run: uv run pre-commit run --all-files
+      - name: Typage (pyright)
+        run: uv run pyright
+      - name: Lint SQL (sqlfluff)
+        run: uv run sqlfluff lint transform/
+      - name: Tests unitaires avec couverture
+        run: uv run pytest -m "not integration" --cov=refdata --cov-report=term-missing
+  integration:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      POSTGRES_DB: refdata
+      POSTGRES_USER: refdata_owner
+      POSTGRES_PASSWORD: ci-owner-password
+      POSTGRES_HOST: localhost
+      POSTGRES_PORT: "5433"
+      REFDATA_APP_PASSWORD: ci-app-password
+      REFDATA_RO_PASSWORD: ci-ro-password
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+      - run: uv sync --locked
+      - name: Démarrer PostgreSQL (même image et mêmes options qu'en local)
+        run: |
+          docker run -d --name refdata-db \
+           -e POSTGRES_DB -e POSTGRES_USER -e POSTGRES_PASSWORD \
+           -p 127.0.0.1:${POSTGRES_PORT}:5432 \
+           pgvector/pgvector:0.8.7-pg18 \
+           postgres -c shared_preload_libraries=pg_stat_statements \
+                    -c pg_stat_statements.track=all
+      - name: Attendre que la base soit prête
+        run: |
+          for i in $(seq 1 30); do
+            docker exec refdata-db pg_isready -q -h 127.0.0.1 && exit 0
+            sleep 2
+          done
+          docker logs refdata-db
+          exit 1
+      - name: Amorçage (rôles, schémas, extensions)
+        run: |
+          docker exec -i refdata-db psql -v ON_ERROR_STOP=1 \
+            -U "$POSTGRES_USER" -d "$POSTGRES_DB" \
+            -v app_pw="$REFDATA_APP_PASSWORD" -v ro_pw="$REFDATA_RO_PASSWORD" \
+            < infra/sql/bootstrap.sql
+      - name: Tests d'intégration
+        run: uv run pytest -m integration -v
