@@ -87,7 +87,22 @@ Les extensions sont créées par `infra/sql/bootstrap.sql` et vérifiées par `i
     just check       # lint, typage, tests unitaires
     just test-int    # tests d'intégration (base démarrée)
 
-## 6. Politique de versions
+## 6. Intégration continue
+
+La CI (Github Actions, `.github/workflows/ci.yml`) s'exécute à chaque pull request et chaque fusion dans `main`.
+Décisions: [ADR 0002](adr/0002-continuous-integration.md).
+
+| Job | Contenu |
+|---|---|
+| `quality` | hooks pre-commit, pyright, sqlfluff, tests unitaires avec couverture |
+| `integration` | PostgreSQL 18 + pgvector (`0.8.7-pg18`), amorçage, tests d'intégration |
+
+- Python: version de `.python-version` (3.14), dépendances de `uv.lock`
+- Mots de passe de la CI : factices, base éphémère. Aucun secret Github n'est utilisé.
+- Reproduire en local : `just check` (qualité), puis `just db-up` et `just test-int` (intégration).
+- `main` est protégée : pull request obligatoire, vérifications `quality` et `integration` exigées, fusion par squash, historique linéaire.
+
+## 7. Politique de versions
 
 - Les versions de l'image et de Python sont épinglées. Tout changement passe par une branche dédiée et un ADR.
 - L'intégration continue (GitHub Actions) utilise Docker avec la même image que le poste local.
