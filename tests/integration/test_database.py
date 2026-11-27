@@ -59,6 +59,13 @@ def test_app_role_connects_and_selects(app_conn: Conn) -> None:
     assert row == (1, APP_ROLE)
 
 
+def test_expected_extensions_are_installed(app_conn: Conn) -> None:
+    rows = app_conn.execute("SELECT extname FROM pg_extension").fetchall()
+    installed = {name for (name,) in rows}
+    missing = EXPECTED_EXTENSIONS - installed
+    assert not missing, f"extensions manquantes: {sorted(missing)}"
+
+
 def test_expected_schemas_exist(app_conn: Conn) -> None:
     rows = app_conn.execute("SELECT schema_name FROM information_schema.schemata").fetchall()
     existing = {name for (name,) in rows}
