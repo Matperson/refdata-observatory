@@ -166,3 +166,71 @@ pas un échec.
 - Un préfixe en minuscules est valide avec l'avertissement de casse (décision 2).
 
 **Sources** : [ANNA, ISIN Uniform Guidelines, version 26 (juin 2026)](https://anna-web.org/wp-content/uploads/2026/06/ISIN-Guidelines-Version-26-Jun-2026.pdf) · [ANNA, mise en œuvre de l'ISO 6166 révisée](https://anna-web.org/implementation-of-revised-iso-6166/), consultées le 2026-11-27.
+
+### Récapitulatif de conception
+
+**Résultat de la validation** :
+
+| Champ | Contenu |
+|---|---|
+| valeur reçue | la chaîne telle qu'elle a été fournie, jamais modifiée |
+| valeur normalisée | la valeur après correction des écarts de forme (majuscules, sans espaces) |
+| raisons d'échec | ensemble des raisons pour lesquelles la valeur n'est pas un ISIN valide |
+| avertissements | ensemble des écarts de forme corrigés (valeur récupérable) |
+| `valid` | vrai si et seulement si l'ensemble des raisons d'échec est vide |
+
+**Raisons d'échec** (ensemble fermé, valeurs stables) :
+
+- `wrong_length` : la valeur normalisée ne fait pas 12 caractères (y compris vide) ;
+- `forbidden_characters` : la valeur normalisée contient un caractère hors lettres majuscules et chiffres ASCII ;
+- `invalid_prefix_format` : les deux premiers caractères ne sont pas deux lettres ;
+- `invalid_check_digit` : la clé de contrôle ne correspond pas au calcul de la norme.
+
+**Avertissements** (ensemble fermé, valeurs stables) :
+
+- `case_corrected` : la valeur contenait des minuscules (casse mixte comprise) ;
+- `whitespace_removed` : la valeur contenait des espaces ou des caractères blancs (tabulation, saut de ligne, espace insécable), aux bords ou à l'intérieur.
+
+**Ordre d'évaluation** :
+
+1. Conserver la valeur reçue, puis la normaliser : retirer les espaces et caractères blancs, mettre en majuscules ; chaque correction effectuée produit son avertissement.
+2. Contrôler la structure sur la valeur normalisée et cumuler toutes les raisons d'échec structurelles : longueur, caractères autorisés, forme du préfixe.
+3. Évaluer la clé de contrôle seulement si aucune raison structurelle n'a été relevée, car elle n'a pas de sens sur une valeur mal formée.
+
+### Cas de test
+
+| Cas | Entrée | Valide ? | Raisons d'échec | Avertissements | Valeur normalisée |
+|---|---|---|---|---|---|
+| ISIN réel, US | `US0378331005` | oui | aucune | aucun | `US0378331005` |
+| ISIN réel, US (second) | `US5949181045` | oui | aucune | aucun | `US5949181045` |
+| ISIN réel, GB | `GB0002634946` | oui | aucune | aucun | `GB0002634946` |
+| ISIN réel, DE | `DE000BAY0017` | oui | aucune | aucun | `DE000BAY0017` |
+| ISIN réel, FR | `FR0000120271` | oui | aucune | aucun | `FR0000120271` |
+| ISIN réel, AU | `AU0000XVGZA3` | oui | aucune | aucun | `AU0000XVGZA3` |
+| préfixe spécial XS | `<ISIN XS réel, à relever dans FIRDS>` | oui | aucune | aucun | identique |
+| préfixe spécial EU | `<ISIN EU réel, à relever dans FIRDS>` | oui | aucune | aucun | identique |
+| préfixe inventé de forme correcte | `ZZ0000000008` | oui | aucune | aucun | `ZZ0000000008` |
+| minuscules | `us0378331005` | oui | aucune | `case_corrected` | `US0378331005` |
+| casse mixte | `Us0378331005` | oui | aucune | `case_corrected` | `US0378331005` |
+| espaces aux bords | `" US0378331005 "` | oui | aucune | `whitespace_removed` | `US0378331005` |
+| espaces à l'intérieur | `US037833 1005` | oui | aucune | `whitespace_removed` | `US0378331005` |
+| tabulation et saut de ligne | `\tUS0378331005\n` | oui | aucune | `whitespace_removed` | `US0378331005` |
+| espace insécable | `\u00a0US0378331005` | oui | aucune | `whitespace_removed` | `US0378331005` |
+| casse et espaces | `" us0378331005 "` | oui | aucune | `case_corrected`, `whitespace_removed` | `US0378331005` |
+| clé fausse | `US0378331004` | non | `invalid_check_digit` | aucun | `US0378331004` |
+| clé non numérique | `US037833100A` | non | `invalid_check_digit` | aucun | `US037833100A` |
+| minuscules et clé fausse | `us0378331004` | non | `invalid_check_digit` | `case_corrected` | `US0378331004` |
+| longueur 11 | `US037833100` | non | `wrong_length` | aucun | `US037833100` |
+| longueur 13 | `US03783310050` | non | `wrong_length` | aucun | `US03783310050` |
+| espaces et longueur | `" US037833100 "` | non | `wrong_length` | `whitespace_removed` | `US037833100` |
+| chaîne vide | `""` | non | `wrong_length` | aucun | `""` |
+| espaces seulement | `"   "` | non | `wrong_length` | `whitespace_removed` | `""` |
+| caractère interdit | `US0378331_05` | non | `forbidden_characters` | aucun | `US0378331_05` |
+| préfixe contenant un chiffre | `1S0378331005` | non | `invalid_prefix_format` | aucun | `1S0378331005` |
+| cumul longueur et préfixe | `1S037833100` | non | `wrong_length`, `invalid_prefix_format` | aucun | `1S037833100` |
+
+### Tests de propriétés (valables pour toutes les entrées)
+
+- La valeur reçue du résultat est identique à l'entrée, sans aucune modification.
+- `valid` est vrai si et seulement si aucune raison d'échec n'est présente.
+- Le résultat est immuable : toute tentative de modification échoue.
